@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Gerador de Relatório - SENAI Mobile</title>
+    <style>
+        /* --- ESTILOS GERAIS (FOCADOS EM PRODUTIVIDADE E ACESSIBILIDADE) --- */
+        :root {
+            --primary-color: #0056a4; /* Azul SENAI */
+            --text-color: #222;
+            --bg-color: #eef2f7;
+            --border-color: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* Remove o flash azul ao tocar no mobile */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 12px; /* Menor margem nas bordas do celular */
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #fff;
+            margin: 0 auto;
+            padding: 20px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 22px;
+            text-align: center;
+            color: var(--primary-color);
+            margin: 0 0 5px 0;
+        }
+
+        h2 {
+            font-size: 18px;
+            text-align: center;
+            color: #555;
+            margin: 0 0 20px 0;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        /* Grid que se adapta: 2 colunas no PC, 1 coluna no Celular */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        /* Inputs otimizados para o toque (mínimo 44px de altura padrão mobile) */
+        input, select, textarea {
+            padding: 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px; /* Essencial: evita auto-zoom no iOS */
+            color: #333;
+            background-color: #fff;
+            outline: none;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none; /* Remove estilizações bizarras de alguns navegadores mobile */
+        }
+
+        /* Ajuste específico para o input do tipo date nativo do celular */
+        input[type="date"] {
+            min-height: 48px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 86, 164, 0.15);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Radio buttons transformados em botões largos de toque */
+        .radio-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .radio-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        /* Estilo quando o radio invisível está marcado */
+        .radio-option:has(input:checked) {
+            background-color: #e0f2fe;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .btn-submit {
+            grid-column: span 2;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0, 86, 164, 0.2);
+        }
+
+        .btn-submit:active {
+            background-color: #003d75;
+            transform: scale(0.98);
+        }
+
+        /* Área do relatório oculta em tela */
+        #report-preview {
+            display: none;
+        }
+
+        /* --- RESPONSIVIDADE PARA TELAS PEQUENAS (CELULAR) --- */
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr; /* Força tudo a virar uma única coluna */
+                gap: 14px;
+            }
+
+            .full-width, .btn-submit {
+                grid-column: span 1;
+            }
+
+            .radio-group {
+                flex-direction: column; /* Empilha os botões de tipo de manutenção */
+                gap: 8px;
+            }
+            
+            .radio-option {
+                justify-content: flex-start;
+                padding-left: 16px;
+            }
+        }
+
+        /* --- REGRAS DE IMPRESSÃO --- */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            #report-preview {
+                display: block !important;
+            }
+
+            .report-header {
+                border-bottom: 3px solid var(--primary-color);
+                padding-bottom: 10px;
+                margin-bottom: 25px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .report-title {
+                font-size: 22px;
+                font-weight: bold;
+                color: var(--primary-color);
+                text-transform: uppercase;
+            }
+
+            .report-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+
+            .report-table td {
+                padding: 8px 10px;
+                border: 1px solid #444;
+                font-size: 13px;
+                vertical-align: top;
+            }
+
+            .bg-gray {
+                background-color: #f2f2f2 !important;
+                font-weight: bold;
+                width: 25%;
+            }
+
+            .procedimentos-box {
+                border: 1px solid #444;
+                padding: 12px;
+                min-height: 180px;
+                font-size: 13px;
+                line-height: 1.5;
+                white-space: pre-wrap;
+            }
+
+            .signatures {
+                margin-top: 50px;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .signature-line {
+                border-top: 1px solid #000;
+                width: 45%;
+                text-align: center;
+                padding-top: 5px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container no-print">
+        <h1>Ordem de Manutenção</h1>
+        <h2>SENAI</h2>
+        <p class="subtitle">Preencha os dados no seu smartphone para gerar a folha de impressão.</p>
+        
+        <form id="maintenance-form" onsubmit="generateReport(event)">
+            <div class="form-grid">
+                
+                <div class="form-group full-width">
+                    <label for="maquina">Nome da Máquina *</label>
+                    <input type="text" id="maquina" required placeholder="Ex: Torno Mecânico Romi">
+                </div>
+
+                <div class="form-group">
+                    <label for="patrimonio">Patrimônio *</label>
+                    <input type="text" id="patrimonio" required placeholder="Ex: MG-123456">
+                </div>
+
+                <div class="form-group">
+                    <label for="unidade">Unidade SENAI *</label>
+                    <input type="text" id="unidade" required placeholder="Ex: CFP Américo Renê">
+                </div>
+
+                <div class="form-group">
+                    <label for="local">Local (Sala/Laboratório) *</label>
+                    <input type="text" id="local" required placeholder="Ex: Oficina de Mecânica - 102">
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Manutenção *</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="tipo_manutencao" value="Preventiva" checked style="width:auto;"> Preventiva
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="tipo_manutencao" value="Corretiva" style="width:auto;"> Corretiva
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_manutencao">Data da Manutenção *</label>
+                    <input type="date" id="data_manutencao" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="proxima_manutencao">Previsão da Próxima *</label>
+                    <input type="date" id="proxima_manutencao" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="executor">Executor *</label>
+                    <input type="text" id="executor" required placeholder="Nome do técnico">
+                </div>
+
+                <div class="form-group">
+                    <label for="chamado">Nº do Chamado <span style="font-weight:normal; color:#777;">(Opcional)</span></label>
+                    <input type="text" id="chamado" placeholder="Ex: #2026-987">
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="procedimentos">Procedimentos Realizados *</label>
+                    <textarea id="procedimentos" required placeholder="Descreva as ações tomadas, peças trocadas, etc."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Gerar e Imprimir</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="report-preview">
+        <div class="report-header">
+            <div class="report-title">Relatório de Manutenção</div>
+            <div style="font-weight: bold; font-size: 18px; color: #555;">SENAI</div>
+        </div>
+
+        <table class="report-table">
+            <tr>
+                <td class="bg-gray">Unidade:</td>
+                <td id="p-unidade" colspan="3"></td>
+            </tr>
+            <tr>
+                <td class="bg-gray">Máquina / Equip.:</td>
+                <td id="p-maquina" style="width: 40%;"></td>
+                <td class="bg-gray" style="width: 15%;">Patrimônio:</td>
+                <td id="p-patrimonio"></td>
+            </tr>
+            <tr>
+                <td class="bg-gray">Local / Sala:</td>
+                <td id="p-local"></td>
+                <td class="bg-gray">Nº Chamado:</td>
+                <td id="p-chamado"></td>
+            </tr>
+            <tr>
+                <td class="bg-gray">Tipo Manutenção:</td>
+                <td id="p-tipo"></td>
+                <td class="bg-gray">Executado em:</td>
+                <td id="p-data"></td>
+            </tr>
+            <tr>
+                <td class="bg-gray">Executor:</td>
+                <td id="p-executor"></td>
+                <td class="bg-gray">Próx. Prev.:</td>
+                <td id="p-proxima"></td>
+            </tr>
+        </table>
+
+        <h3 style="font-size:15px; margin-bottom:5px;">Procedimentos Realizados</h3>
+        <div id="p-procedimentos" class="procedimentos-box"></div>
+
+        <div class="signatures">
+            <div class="signature-line">
+                <span id="p-sign-executor"></span><br>
+                <small>Responsável Técnico</small>
+            </div>
+            <div class="signature-line">
+                <br>
+                <small>Responsável pela Unidade / Recebimento</small>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Define a data atual como padrão
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('data_manutencao').value = today;
+        });
+
+        function generateReport(event) {
+            event.preventDefault();
+
+            const maquina = document.getElementById('maquina').value;
+            const patrimonio = document.getElementById('patrimonio').value;
+            const unidade = document.getElementById('unidade').value;
+            const local = document.getElementById('local').value;
+            const executor = document.getElementById('executor').value;
+            const chamado = document.getElementById('chamado').value || 'N/A';
+            const procedimentos = document.getElementById('procedimentos').value;
+            const tipoManutencao = document.querySelector('input[name="tipo_manutencao"]:checked').value;
+
+            const formatDate = (dateStr) => {
+                if(!dateStr) return '';
+                const [year, month, day] = dateStr.split('-');
+                return `${day}/${month}/${year}`;
+            };
+
+            const dataManutencao = formatDate(document.getElementById('data_manutencao').value);
+            const proximaManutencao = formatDate(document.getElementById('proxima_manutencao').value);
+
+            // Popula os campos do print
+            document.getElementById('p-maquina').innerText = maquina;
+            document.getElementById('p-patrimonio').innerText = patrimonio;
+            document.getElementById('p-unidade').innerText = unidade;
+            document.getElementById('p-local').innerText = local;
+            document.getElementById('p-tipo').innerText = tipoManutencao;
+            document.getElementById('p-data').innerText = dataManutencao;
+            document.getElementById('p-executor').innerText = executor;
+            document.getElementById('p-proxima').innerText = proximaManutencao;
+            document.getElementById('p-chamado').innerText = chamado;
+            document.getElementById('p-procedimentos').innerText = procedimentos;
+            document.getElementById('p-sign-executor').innerText = executor;
+
+            // Dispara o comando de impressão do celular
+            // No mobile, isso geralmente abre a opção de "Salvar como PDF" ou enviar para impressora Wi-Fi.
+            window.print();
+        }
+    </script>
+</body>
+</html>
